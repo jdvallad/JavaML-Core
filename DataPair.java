@@ -10,7 +10,7 @@ public class DataPair {
         this.label = label;
     }
 
-    private DataPair() {
+    private DataPair() { //
 
     }
 
