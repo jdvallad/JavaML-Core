@@ -21,6 +21,16 @@ class NeuralNetwork {
 
     }
 
+    public static NeuralNetwork createModel(int[] nodes, String[] activations, String costFunction) throws Exception {
+        NeuralNetwork model = new NeuralNetwork(nodes[0], activations[0]);
+        for (int i = 1; i < nodes.length - 1; i++) {
+            model.add(nodes[i], activations[i]);
+        }
+        model.add(nodes[nodes.length - 1]);
+        model.compile(costFunction);
+        return model;
+    }
+
     public void save(String saveFile) throws Exception {
         Map<String, Object> data = new HashMap<>();
         data.put("cost", cost);
@@ -121,32 +131,51 @@ class NeuralNetwork {
         return output;
     }
 
-    public void train(DataIterator trainer, double learningRate) throws Exception {
+    // Update the return type from void to int[]
+    public int[] train(StreamingIterator trainer, double learningRate) throws Exception {
+        int totalBatches = 0;
+        int totalDatapoints = 0;
+
         while (trainer.hasNextBatch()) {
             resetAverages();
-            for (DataPair pair : trainer.nextBatch()) {
+
+            // Extract the batch so we can measure its length
+            DataPair[] currentBatch = trainer.nextBatch();
+            totalBatches++;
+            totalDatapoints += currentBatch.length;
+
+            for (DataPair pair : currentBatch) {
                 Matrix output = compute(pair.input);
                 backPropogateErrors(output, pair.label);
                 updateAverages();
             }
+
             updateParameters(-learningRate / (double) trainer.batchSize);
         }
+
         trainer.reset();
-        return;
+        return new int[] { totalBatches, totalDatapoints };
     }
 
-    public double validate(DataIterator validator) throws Exception {
+    // --- Updated to dynamically count records for accurate averages ---
+    public double validate(StreamingIterator validator) throws Exception {
         double totalErrorSum = 0;
-        while (validator.hasNextBatch())
+        int totalRecords = 0;
+
+        while (validator.hasNextBatch()) {
             for (DataPair pair : validator.nextBatch()) {
                 totalErrorSum += getCost(compute(pair.input), pair.label);
+                totalRecords++; // Safely counts actual rows processed
             }
-        double AverageCost = totalErrorSum / (double) (validator.numBatches * validator.batchSize);
+        }
+
+        double averageCost = totalErrorSum / (double) totalRecords;
         validator.reset();
-        return AverageCost;
+        return averageCost;
     }
 
-    public double getClassifierAccuracy(DataIterator iter) throws Exception {
+    // --- Updated to accept StreamingIterator ---
+    public double getClassifierAccuracy(StreamingIterator iter) throws Exception {
         int count = 0;
         int correct = 0;
         while (iter.hasNextBatch()) {
@@ -199,5 +228,4 @@ class NeuralNetwork {
             temp = temp.nextNodeLayer;
         }
     }
-
 }

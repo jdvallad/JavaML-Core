@@ -750,6 +750,8 @@ public class Matrix {
                 return this.leakyRelu(activation, nthDerivative);
             case "identity":
                 return this.identity(activation, nthDerivative);
+            case "exponential":
+                return this.exponential(activation, nthDerivative);
             case "relu":
                 return this.relu(activation, nthDerivative);
             case "tanh":
@@ -896,8 +898,28 @@ public class Matrix {
     public Matrix identityClone(String activation, int nthDerivative) throws Exception {
         return Matrix.identityClone(this, activation, nthDerivative);
     }
-    //
 
+    //
+    public Matrix exponential(String activation, int nthDerivative) throws Exception {
+        for (int i = 0; i < this.cells.length; i++) {
+            this.cells[i] = Math.exp(this.cells[i]);
+        }
+        return this;
+    }
+
+    public Matrix exponential(Matrix a, String activation, int nthDerivative) throws Exception {
+        return this.set("*", "*", a).exponential(activation, nthDerivative);
+    }
+
+    public static Matrix exponentialClone(Matrix a, String activation, int nthDerivative) throws Exception {
+        return Matrix.create(a.rows, a.columns).exponential(a, activation, nthDerivative);
+    }
+
+    public Matrix exponentialClone(String activation, int nthDerivative) throws Exception {
+        return Matrix.exponentialClone(this, activation, nthDerivative);
+    }
+
+    //
     public Matrix relu(String activation, int nthDerivative) throws Exception {
         switch (nthDerivative) {
             case 0:
